@@ -1,25 +1,24 @@
-const CACHE_NAME = 'fokus-v1';
+const CACHE_NAME = 'fokus-v2';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './styles.css',
+  './app.js'
 ];
 
-// Install event - Cache files
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache).catch(err => {
         console.log('Cache addAll error:', err);
-        // Offline cache fallback - nur index.html
-        return cache.add('/index.html');
+        return cache.add('./index.html');
       });
     })
   );
   self.skipWaiting();
 });
 
-// Activate event - Clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -35,7 +34,6 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch event - Serve from cache, fall back to network
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') {
     return;
@@ -43,22 +41,24 @@ self.addEventListener('fetch', event => {
 
   event.respondWith(
     caches.match(event.request).then(response => {
-      // Return cached version if available
       if (response) {
         return response;
       }
 
       return fetch(event.request).then(response => {
-        // Don't cache if not a success response
         if (!response || response.status !== 200 || response.type === 'error') {
           return response;
         }
 
-        // Clone the response
         const responseToCache = response.clone();
 
-        // Cache the fetched response for HTML and JSON
-        if (event.request.url.includes('.json') || event.request.url.endsWith('/') || event.request.url.endsWith('.html')) {
+        if (
+          event.request.url.includes('.json') ||
+          event.request.url.endsWith('/') ||
+          event.request.url.endsWith('.html') ||
+          event.request.url.endsWith('.css') ||
+          event.request.url.endsWith('.js')
+        ) {
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseToCache);
           });
@@ -66,8 +66,7 @@ self.addEventListener('fetch', event => {
 
         return response;
       }).catch(() => {
-        // Offline fallback
-        return caches.match('/index.html');
+        return caches.match('./index.html');
       });
     })
   );
