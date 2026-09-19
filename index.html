@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5-Minuten Fokus – Christoph</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.15);
+      --muted: #64748b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      padding: 2.5rem 2rem 2rem 2rem;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+
+    /* Motivierender Headerbereich */
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin: 0 0 0.5rem 0;
+      color: #f1f5f9;
+      font-weight: 700;
+    }
+
+    .quote-box {
+      background-color: #0f172a;
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0 1.5rem 0;
+      text-align: left;
+    }
+
+    .quote-text {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.4;
+      font-style: italic;
+    }
+
+    .timer-display {
+      font-size: 4rem;
+      font-weight: 800;
+      font-family: monospace;
+      margin: 1.2rem 0;
+      letter-spacing: 2px;
+      color: #f8fafc;
+    }
+
+    .btn {
+      background-color: var(--accent);
+      color: #022c22;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      background-color: var(--muted);
+      cursor: not-allowed;
+      color: #cbd5e1;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .history-section {
+      margin-top: 2rem;
+      border-top: 1px solid #334155;
+      padding-top: 1.5rem;
+    }
+
+    .history-title {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .history-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .day-card {
+      background-color: #0f172a;
+      padding: 10px 6px;
+      border-radius: 8px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #1e293b;
+    }
+
+    .day-name {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .day-status {
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Motivierender Header -->
+    <div class="header-badge">⚡ TÄGLICHER IMPULS</div>
+    <h1>Hi Christoph! 👋</h1>
+    
+    <div class="quote-box">
+      <p class="quote-text">„Die ersten 5 Minuten sind die schwersten. Einfach anfangen und den Haken abholen."</p>
+    </div>
+
+    <div class="timer-display" id="timer">05:00</div>
+    <button class="btn" id="startBtn">5 Minuten Starten</button>
+
+    <div class="history-section">
+      <div class="history-title">Deine Bilanz (Letzte 5 Tage)</div>
+      <div class="history-grid" id="historyGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    const DURATION = 5 * 60; // 5 Minuten
+    let timeLeft = DURATION;
+    let timerInterval = null;
+
+    const timerEl = document.getElementById('timer');
+    const startBtn = document.getElementById('startBtn');
+    const historyGrid = document.getElementById('historyGrid');
+
+    function formatDateKey(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function renderHistory() {
+      historyGrid.innerHTML = '';
+      const today = new Date();
+
+      for (let i = 4; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dateKey = formatDateKey(d);
+        const isDone = localStorage.getItem('done_' + dateKey) === 'true';
+
+        const dayName = i === 0 ? 'Heute' : d.toLocaleDateString('de-DE', { weekday: 'short' });
+
+        const card = document.createElement('div');
+        card.className = 'day-card';
+        card.innerHTML = `
+          <span class="day-name">${dayName}</span>
+          <span class="day-status">${isDone ? '✅' : '❌'}</span>
+        `;
+        historyGrid.appendChild(card);
+      }
+
+      const todayKey = formatDateKey(today);
+      if (localStorage.getItem('done_' + todayKey) === 'true') {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Heute erledigt! Strong! 🎉';
+      }
+    }
+
+    function completeSession() {
+      const todayKey = formatDateKey(new Date());
+      localStorage.setItem('done_' + todayKey, 'true');
+      startBtn.disabled = true;
+      startBtn.textContent = 'Heute erledigt! Strong! 🎉';
+      renderHistory();
+      alert('Stark, Christoph! 5 Minuten geschafft. Haken ist gesetzt! ✅');
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (timerInterval) return;
+
+      startBtn.disabled = true;
+      startBtn.textContent = 'Fokus läuft...';
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          completeSession();
+        }
+      }, 1000);
+    });
+
+    updateTimerDisplay();
+    renderHistory();
+  </script>
+</body>
+</html>
